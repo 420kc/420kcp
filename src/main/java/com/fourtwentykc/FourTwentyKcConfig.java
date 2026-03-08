@@ -7,13 +7,13 @@ import net.runelite.client.config.ConfigItem;
 @ConfigGroup("fourtwentykc")
 public interface FourTwentyKcConfig extends Config
 {
-    @ConfigItem(
-        keyName = "chatMessages",
-        name = "Chat messages",
-        description = "Show 'blaze it' in chat when you hit 420 kc on a boss"
-    )
-    default boolean chatMessages()
-    {
-        return true;
-    }
+	@ConfigItem(
+		keyName = "chatMessages",
+		name = "Chat messages",
+		description = "Show a message in chat on your 420th kill"
+	)
+	default boolean chatMessages()
+	{
+		return true;
+	}
 }
