@@ -45,7 +45,8 @@ public class FourTwentyKcPlugin extends Plugin
 			return;
 		}
 
-		Matcher matcher = KC_PATTERN.matcher(event.getMessage());
+		String msg = event.getMessage().replaceAll("<[^>]+>", "");
+		Matcher matcher = KC_PATTERN.matcher(msg);
 		if (!matcher.find())
 		{
 			return;
