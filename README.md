@@ -1,8 +1,6 @@
 # 420 kc
 
-`420 kc` is the small RuneLite plugin that kicked off the broader 420kc / Kill Clog ecosystem.
-
-It celebrates your 420th boss kill count with a chat message, configurable milestone behavior, and a deliberately simple plugin-hub footprint.
+`420 kc`  celebrates your 420th boss kill count with a chat message
 
 ## Features
 
