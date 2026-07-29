@@ -22,8 +22,16 @@ import net.runelite.client.plugins.PluginDescriptor;
 )
 public class FourTwentyKcPlugin extends Plugin
 {
-	private static final Pattern KC_PATTERN =
-		Pattern.compile("Your .+ kill count is: (\\d[\\d,]*)\\.");
+	// Mirrors RuneLite's ChatCommandsPlugin KILLCOUNT_PATTERN: the game says
+	// "kill count" for bosses but "completion count" for the Gauntlet, "completed"
+	// for raids, "subdued" for Wintertodt, plus harvest/lap/success variants.
+	// Matching only "kill count" missed a 420 Gauntlet completion (2026-07-28).
+	// The number keeps its <col> wrapper as the discriminator, so this stays as
+	// strict as RuneLite's own parser.
+	static final Pattern KC_PATTERN = Pattern.compile(
+		"Your (?:completion count for |subdued |completed )?(?:<col=[0-9a-f]{6}>)?.+?(?:</col>)? "
+			+ "(?:(?:kill|harvest|lap|completion|success|Total Ticket) )?(?:count )?"
+			+ "is: ?<col=[0-9a-f]{6}>([0-9,]+)</col>");
 
 	@Inject
 	private FourTwentyKcConfig config;
@@ -45,8 +53,9 @@ public class FourTwentyKcPlugin extends Plugin
 			return;
 		}
 
-		String msg = event.getMessage().replaceAll("<[^>]+>", "");
-		Matcher matcher = KC_PATTERN.matcher(msg);
+		// Match the raw message: the <col> tags around the number are part of
+		// the pattern's strictness, so they must survive to the matcher.
+		Matcher matcher = KC_PATTERN.matcher(event.getMessage());
 		if (!matcher.find())
 		{
 			return;
