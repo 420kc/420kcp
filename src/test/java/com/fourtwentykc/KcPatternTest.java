@@ -1,6 +1,5 @@
 package com.fourtwentykc;
 
-import java.util.regex.Matcher;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -16,8 +15,7 @@ public class KcPatternTest
 {
 	private static String kcOf(String message)
 	{
-		Matcher m = FourTwentyKcPlugin.KC_PATTERN.matcher(message);
-		return m.find() ? m.group(1) : null;
+		return FourTwentyKcPlugin.countFrom(message);
 	}
 
 	@Test
@@ -97,5 +95,68 @@ public class KcPatternTest
 	public void plainChatDoesNotMatch()
 	{
 		assertTrue(kcOf("blaze it") == null);
+	}
+
+	// The 2026-07-30 full-catalog audit: every count-bearing message shape in
+	// RuneLite's ChatCommandsPlugin that does not say "count is:". Formats are
+	// their exact regex targets.
+
+	@Test
+	public void sepulchreTotalCompletionsMatches()
+	{
+		assertEquals("420", kcOf(
+			"You have completed Floor 5 of the Hallowed Sepulchre! Total completions: <col=ff0000>420</col>."));
+	}
+
+	@Test
+	public void grandHallowedCoffinMatches()
+	{
+		assertEquals("420", kcOf(
+			"You have opened the Grand Hallowed Coffin <col=ff0000>420</col> times!"));
+	}
+
+	@Test
+	public void riftsClosedMatches()
+	{
+		assertEquals("420", kcOf(
+			"Amount of Rifts you have closed: <col=ff0000>420</col>."));
+	}
+
+	@Test
+	public void hunterRumoursMatch()
+	{
+		assertEquals("420", kcOf(
+			"You have completed <col=ff3045>420</col> rumours for the Hunter Guild."));
+	}
+
+	@Test
+	public void birdEggOfferingsMatch()
+	{
+		assertEquals("420", kcOf(
+			"You have made <col=ff0000>420</col> offerings."));
+	}
+
+	@Test
+	public void chestOpeningsMatch()
+	{
+		assertEquals("420", kcOf("You have opened the crystal chest 420 times."));
+		assertEquals("420", kcOf("You have opened Larran's big chest 420 times."));
+		assertEquals("420", kcOf("You have opened the Brimstone chest 420 times."));
+	}
+
+	@Test
+	public void chestNeverOpenedDoesNotMatch()
+	{
+		// The "never opened" and "opened once" variants carry no digits and
+		// must stay silent.
+		assertTrue(kcOf("You have never opened the crystal chest.") == null);
+		assertTrue(kcOf("You have opened the crystal chest once.") == null);
+	}
+
+	@Test
+	public void collectionLogItemDoesNotMatch()
+	{
+		// A count-free message from the same catalog: not a KC, never fires.
+		assertTrue(kcOf("New item added to your collection log: Twisted bow") == null);
 	}
 }

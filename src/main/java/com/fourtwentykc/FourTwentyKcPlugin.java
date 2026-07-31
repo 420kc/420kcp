@@ -33,6 +33,48 @@ public class FourTwentyKcPlugin extends Plugin
 			+ "(?:(?:kill|harvest|lap|completion|success|Total Ticket) )?(?:count )?"
 			+ "is: ?<col=[0-9a-f]{6}>([0-9,]+)</col>");
 
+	// The count-bearing messages that do NOT say "count is:" at all, from the
+	// same ChatCommandsPlugin catalog (2026-07-30 audit - the full sweep after
+	// the Gauntlet taught us Jagex never uses one wording when five will do).
+	// One capturing group each: the count.
+	static final Pattern SEPULCHRE_PATTERN = Pattern.compile(
+		"You have completed Floor \\d of the Hallowed Sepulchre! Total completions: "
+			+ "<col=ff0000>([0-9,]+)</col>\\.");
+	static final Pattern GRAND_HALLOWED_COFFIN_PATTERN = Pattern.compile(
+		"You have opened the Grand Hallowed Coffin <col=ff0000>([0-9,]+)</col> times?!");
+	static final Pattern RIFTS_CLOSED_PATTERN = Pattern.compile(
+		"Amount of Rifts you have closed: <col=ff0000>([0-9,]+)</col>\\.",
+		Pattern.CASE_INSENSITIVE);
+	static final Pattern HUNTER_RUMOUR_PATTERN = Pattern.compile(
+		"You have completed <col=[0-9a-f]{6}>([0-9,]+)</col> rumours? for the Hunter Guild\\.");
+	static final Pattern BIRD_EGG_PATTERN = Pattern.compile(
+		"You have made <col=ff0000>([0-9,]+)</col> offerings?\\.");
+	static final Pattern CHEST_OPENING_PATTERN = Pattern.compile(
+		"You have opened (?:the )?(?:crystal chest|Larran's big chest|Larran's small chest"
+			+ "|Brimstone chest) ([0-9,]+) times\\.");
+
+	// Duel Arena wins/losses are in RuneLite's catalog but the content left the
+	// game; those messages can no longer occur, so they are deliberately absent.
+	static final Pattern[] KC_PATTERNS = {
+		KC_PATTERN, SEPULCHRE_PATTERN, GRAND_HALLOWED_COFFIN_PATTERN,
+		RIFTS_CLOSED_PATTERN, HUNTER_RUMOUR_PATTERN, BIRD_EGG_PATTERN,
+		CHEST_OPENING_PATTERN,
+	};
+
+	/** The count carried by a game message, or null if it carries none. */
+	static String countFrom(String message)
+	{
+		for (Pattern pattern : KC_PATTERNS)
+		{
+			Matcher matcher = pattern.matcher(message);
+			if (matcher.find())
+			{
+				return matcher.group(1);
+			}
+		}
+		return null;
+	}
+
 	@Inject
 	private FourTwentyKcConfig config;
 
@@ -54,14 +96,14 @@ public class FourTwentyKcPlugin extends Plugin
 		}
 
 		// Match the raw message: the <col> tags around the number are part of
-		// the pattern's strictness, so they must survive to the matcher.
-		Matcher matcher = KC_PATTERN.matcher(event.getMessage());
-		if (!matcher.find())
+		// the patterns' strictness, so they must survive to the matcher.
+		String count = countFrom(event.getMessage());
+		if (count == null)
 		{
 			return;
 		}
 
-		String kcStr = matcher.group(1).replace(",", "");
+		String kcStr = count.replace(",", "");
 		int kc;
 		try
 		{
