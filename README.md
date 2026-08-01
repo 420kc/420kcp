@@ -7,5 +7,3 @@
 - Detects when any boss kill count hits exactly 420
 - Sends a celebratory message in chat
 - Can be toggled on/off in plugin settings
-
-
