@@ -10,7 +10,7 @@ public interface FourTwentyKcConfig extends Config
 	@ConfigItem(
 		keyName = "chatMessages",
 		name = "Chat messages",
-		description = "Show a message in chat on your 420th kill"
+		description = "Show a message in chat when a tracked count reaches 420"
 	)
 	default boolean chatMessages()
 	{

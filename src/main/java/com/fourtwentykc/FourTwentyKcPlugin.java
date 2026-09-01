@@ -17,8 +17,8 @@ import net.runelite.client.plugins.PluginDescriptor;
 @Slf4j
 @PluginDescriptor(
 	name = "420 kc",
-	description = "Celebrate 420 kill count milestones with chat messages",
-	tags = {"420", "kc", "boss", "kill count"}
+	description = "Celebrate when boss, activity, or clue counts reach 420",
+	tags = {"420", "kc", "boss", "kill count", "activity", "clue", "clue scroll"}
 )
 public class FourTwentyKcPlugin extends Plugin
 {
@@ -53,12 +53,18 @@ public class FourTwentyKcPlugin extends Plugin
 		"You have opened (?:the )?(?:crystal chest|Larran's big chest|Larran's small chest"
 			+ "|Brimstone chest) ([0-9,]+) times\\.");
 
+	// RuneLite parses clue totals separately in LootTrackerPlugin. The count has
+	// no dedicated col wrapper and precedes the tier; the optional plural matches
+	// both first and later completions.
+	static final Pattern TREASURE_TRAIL_PATTERN = Pattern.compile(
+		"You have completed ([0-9,]+) [a-z]+ Treasure Trails?\\.");
+
 	// Duel Arena wins/losses are in RuneLite's catalog but the content left the
 	// game; those messages can no longer occur, so they are deliberately absent.
 	static final Pattern[] KC_PATTERNS = {
 		KC_PATTERN, SEPULCHRE_PATTERN, GRAND_HALLOWED_COFFIN_PATTERN,
 		RIFTS_CLOSED_PATTERN, HUNTER_RUMOUR_PATTERN, BIRD_EGG_PATTERN,
-		CHEST_OPENING_PATTERN,
+		CHEST_OPENING_PATTERN, TREASURE_TRAIL_PATTERN,
 	};
 
 	/** The count carried by a game message, or null if it carries none. */

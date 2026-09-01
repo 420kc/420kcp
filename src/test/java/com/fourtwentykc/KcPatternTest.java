@@ -159,4 +159,21 @@ public class KcPatternTest
 		// A count-free message from the same catalog: not a KC, never fires.
 		assertTrue(kcOf("New item added to your collection log: Twisted bow") == null);
 	}
+
+	// Clue totals use LootTrackerPlugin's parser rather than the ChatCommands
+	// count catalog. The count precedes the tier and Trail may be singular.
+
+	@Test
+	public void clueCompletionsMatch()
+	{
+		assertEquals("420", kcOf("You have completed 420 master Treasure Trails."));
+		assertEquals("420", kcOf("You have completed 420 beginner Treasure Trails."));
+		assertEquals("69", kcOf("You have completed 69 elite Treasure Trails."));
+	}
+
+	@Test
+	public void firstClueCompletionSingularMatches()
+	{
+		assertEquals("1", kcOf("You have completed 1 hard Treasure Trail."));
+	}
 }
