@@ -6,19 +6,24 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
+import net.runelite.api.Client;
 import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.CommandExecuted;
+import net.runelite.api.events.GameTick;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.overlay.OverlayManager;
 
 @Slf4j
 @PluginDescriptor(
 	name = "420 kc",
 	description = "Celebrate when boss, activity, or clue counts reach 420",
-	tags = {"420", "kc", "boss", "kill count", "activity", "clue", "clue scroll"}
+	tags = {"420", "kc", "boss", "kill count", "activity", "clue", "clue scroll", "popup", "smoke", "confetti"}
 )
 public class FourTwentyKcPlugin extends Plugin
 {
@@ -87,10 +92,62 @@ public class FourTwentyKcPlugin extends Plugin
 	@Inject
 	private ChatMessageManager chatMessageManager;
 
+	@Inject
+	private Client client;
+
+	@Inject
+	private ClientThread clientThread;
+
+	@Inject
+	private OverlayManager overlayManager;
+
+	// Each start of the plugin draws with its own overlay and popup, so an earlier stop's cleanup can never end a
+	// celebration that began after it.
+	private BlazeOverlay overlay;
+	private BlazePopup popup;
+
 	@Provides
 	FourTwentyKcConfig provideConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(FourTwentyKcConfig.class);
+	}
+
+	@Override
+	protected void startUp()
+	{
+		overlay = new BlazeOverlay(client);
+		popup = new BlazePopup(client);
+		overlayManager.add(overlay);
+	}
+
+	@Override
+	protected void shutDown()
+	{
+		overlayManager.remove(overlay);
+		// The overlay draws and the popup lives on the client thread: they end there too.
+		BlazeOverlay stopping = overlay;
+		BlazePopup closing = popup;
+		clientThread.invoke(() ->
+		{
+			stopping.stop();
+			closing.clear();
+		});
+	}
+
+	@Subscribe
+	public void onGameTick(GameTick tick)
+	{
+		popup.tick();
+	}
+
+	/** {@code ::420} shows the celebration as it is set, without waiting for a real 420. */
+	@Subscribe
+	public void onCommandExecuted(CommandExecuted event)
+	{
+		if ("420".equals(event.getCommand()))
+		{
+			celebrate();
+		}
 	}
 
 	@Subscribe
@@ -120,12 +177,34 @@ public class FourTwentyKcPlugin extends Plugin
 			return;
 		}
 
-		if (kc == 420 && config.chatMessages())
+		if (kc != 420)
+		{
+			return;
+		}
+		if (config.chatMessages())
 		{
 			chatMessageManager.queue(QueuedMessage.builder()
 				.type(ChatMessageType.GAMEMESSAGE)
 				.runeLiteFormattedMessage("<col=00ff00>420 kc</col>: blaze it!")
 				.build());
+		}
+		celebrate();
+	}
+
+	/** The popup, smoke and confetti, each as its setting says. */
+	private void celebrate()
+	{
+		if (config.popup())
+		{
+			popup.show();
+		}
+		if (config.smoke())
+		{
+			overlay.smoke(config.smokeDuration(), config.smokeDensity());
+		}
+		if (config.confetti())
+		{
+			overlay.confetti(config.confettiDuration(), config.confettiDensity());
 		}
 	}
 }
