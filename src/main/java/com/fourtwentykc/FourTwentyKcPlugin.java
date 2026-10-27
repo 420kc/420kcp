@@ -1,5 +1,6 @@
 package com.fourtwentykc;
 
+import com.fourtwentykc.farmguild.FarmGuild;
 import com.google.inject.Provides;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,16 +15,19 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.util.GameEventManager;
 
 @Slf4j
 @PluginDescriptor(
 	name = "420 kc",
-	description = "Celebrate when boss, activity, or clue counts reach 420",
-	tags = {"420", "kc", "boss", "kill count", "activity", "clue", "clue scroll", "popup", "smoke", "confetti"}
+	description = "Celebrate when boss, activity, or clue counts reach 420, and grow hemp in the Farming Guild on worlds 420 to 422",
+	tags = {"420", "kc", "boss", "kill count", "activity", "clue", "clue scroll", "popup", "smoke", "confetti",
+		"farming", "guild", "hemp"}
 )
 public class FourTwentyKcPlugin extends Plugin
 {
@@ -101,6 +105,16 @@ public class FourTwentyKcPlugin extends Plugin
 	@Inject
 	private OverlayManager overlayManager;
 
+	@Inject
+	private EventBus eventBus;
+
+	@Inject
+	private GameEventManager gameEventManager;
+
+	// The Farming Guild's hemp and Mary Jane (2.0.0).
+	@Inject
+	private FarmGuild farmGuild;
+
 	// Each start of the plugin draws with its own overlay and popup, so an earlier stop's cleanup can never end a
 	// celebration that began after it.
 	private BlazeOverlay overlay;
@@ -118,12 +132,18 @@ public class FourTwentyKcPlugin extends Plugin
 		overlay = new BlazeOverlay(client);
 		popup = new BlazePopup(client);
 		overlayManager.add(overlay);
+		// RuneLite replays the loaded scene to the plugin alone, so the guild asks for its own: started in game, the
+		// guild already standing grows its hemp.
+		eventBus.register(farmGuild);
+		gameEventManager.simulateGameEvents(farmGuild);
 	}
 
 	@Override
 	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
+		eventBus.unregister(farmGuild);
+		farmGuild.stop();
 		// The overlay draws and the popup lives on the client thread: they end there too.
 		BlazeOverlay stopping = overlay;
 		BlazePopup closing = popup;
