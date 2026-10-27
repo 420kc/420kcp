@@ -188,7 +188,7 @@ public interface FourTwentyKcConfig extends Config
 	@ConfigItem(
 		keyName = "maryJane",
 		name = "Mary Jane",
-		description = "Guildmaster Jane is Mary Jane, in her name and her lines",
+		description = "Guildmaster Jane is Mary Jane, in her name and many of her lines",
 		section = farmGuildSection,
 		position = 4
 	)

@@ -1,6 +1,7 @@
 package com.fourtwentykc.farmguild;
 
 import com.fourtwentykc.FourTwentyKcConfig;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import net.runelite.api.MenuEntry;
 import net.runelite.api.Model;
 import net.runelite.api.RuneLiteObject;
 import net.runelite.api.WorldView;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameTick;
@@ -30,6 +32,7 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.ProfileChanged;
 
 /**
  * The Farming Guild's trees and bushes grow hemp instead, and Guildmaster Jane is Mary Jane, on worlds 420 to 422
@@ -42,8 +45,9 @@ public class FarmGuild
 {
 	static final int FIRST_WORLD = 420;
 	static final int LAST_WORLD = 422;
-	// The settings that change which plants stand, so the scene reloads for them alone.
-	private static final Set<String> PLANT_KEYS = Set.of("hempPlants", "moreHemp", "growthStage", "only420Worlds");
+	// The settings that change which plants stand, so the scene reloads for them alone; a new growth stage changes the
+	// plants in place instead (restage).
+	private static final Set<String> PLANT_KEYS = Set.of("hempPlants", "moreHemp", "only420Worlds");
 	// The settings that change her text and the vault's, so the game's text comes back for them alone.
 	private static final Set<String> TEXT_KEYS = Set.of("maryJane", "seedStash", "only420Worlds");
 
@@ -68,18 +72,24 @@ public class FarmGuild
 	// Each widget renamed, by its component and child index, so a window drawn afresh replaces its own entry: the widget,
 	// the game's text and ours, so turning a setting or the plugin off puts the game's back.
 	private final Map<Long, Shown> renamed = new HashMap<>();
-	// The day the plants last grew at 4:20, so they grow once in that minute.
-	private LocalDate grewOn;
+	// A new growth stage some plants are still waiting on a model for.
+	private boolean restaging;
+	// The time of day, for 4:20; a seam for the tests.
+	Clock clock = Clock.systemDefaultZone();
 
-	/** A hemp plant in a tree's place, and its stage. */
+	/** A hemp plant in a tree's place: its tree's tile, its stage, a new stage it waits on, the day it grew at 4:20. */
 	private static final class Plant
 	{
 		final RuneLiteObject object;
+		final WorldPoint at;
 		HempStage stage;
+		HempStage wanted;
+		LocalDate grew;
 
-		Plant(RuneLiteObject object, HempStage stage)
+		Plant(RuneLiteObject object, WorldPoint at, HempStage stage)
 		{
 			this.object = object;
+			this.at = at;
 			this.stage = stage;
 		}
 	}
@@ -103,7 +113,7 @@ public class FarmGuild
 	private static final class Waiting
 	{
 		final GameObject tree;
-		final HempStage stage;
+		HempStage stage;
 
 		Waiting(GameObject tree, HempStage stage)
 		{
@@ -144,6 +154,21 @@ public class FarmGuild
 			// The plants come or go with the scene: a reload places them, or brings the game's trees back.
 			clientThread.invoke(this::reloadScene);
 		}
+		if ("growthStage".equals(event.getKey()))
+		{
+			clientThread.invoke(this::restage);
+		}
+	}
+
+	@Subscribe
+	public void onProfileChanged(ProfileChanged event)
+	{
+		// Another profile's settings arrive all at once, never key by key: the text and the plants follow them.
+		clientThread.invoke(() ->
+		{
+			restoreText();
+			reloadScene();
+		});
 	}
 
 	@Subscribe
@@ -168,6 +193,12 @@ public class FarmGuild
 		{
 			return;
 		}
+		// A tree already standing in hemp (the plugin started in the tick a load's spawns were still to come) gets no
+		// second plant.
+		if (planted(object.getWorldLocation()))
+		{
+			return;
+		}
 		// Random draws each plant's stage as its tree spawns, so every load of the guild grows a new mix.
 		HempStage stage = config.growthStage().forPlant(n -> ThreadLocalRandom.current().nextInt(n));
 		if (!grow(object, stage))
@@ -189,33 +220,82 @@ public class FarmGuild
 		plant.setLocation(tree.getLocalLocation(), tree.getPlane());
 		plant.setOrientation(tree.getOrientation());
 		plant.setActive(true);
-		plants.add(new Plant(plant, stage));
+		plants.add(new Plant(plant, tree.getWorldLocation(), stage));
 		client.getTopLevelWorldView().getScene().removeGameObject(tree);
 		return true;
+	}
+
+	private boolean planted(WorldPoint at)
+	{
+		return plants.stream().anyMatch(p -> p.at.equals(at)) || waiting.stream().anyMatch(w -> at.equals(w.tree.getWorldLocation()));
 	}
 
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
-		if (plants.isEmpty() || !config.growAtFourTwenty() || !HempStage.isFourTwenty(LocalTime.now()))
+		if (plants.isEmpty() || !config.growAtFourTwenty() || !HempStage.isFourTwenty(LocalTime.now(clock)))
 		{
 			return;
 		}
-		LocalDate today = LocalDate.now();
-		if (today.equals(grewOn))
-		{
-			return;
-		}
-		grewOn = today;
+		// Each plant grows once that minute; one whose next stage's model the client is still fetching tries the next tick.
+		LocalDate today = LocalDate.now(clock);
 		for (Plant plant : plants)
 		{
+			if (today.equals(plant.grew))
+			{
+				continue;
+			}
 			HempStage next = plant.stage.next();
 			Model model = next == plant.stage ? null : model(next.getModel());
-			if (model != null)
+			if (next == plant.stage || model != null)
 			{
-				plant.object.setModel(model);
-				plant.stage = next;
+				if (model != null)
+				{
+					plant.object.setModel(model);
+					plant.stage = next;
+				}
+				plant.grew = today;
 			}
+		}
+	}
+
+	/**
+	 * A new growth stage takes effect in place (QA 10/26): each plant standing takes it, a Random one drawing its own,
+	 * with no scene reload, so nothing goes back to a tree on the way.
+	 */
+	private void restage()
+	{
+		HempStage chosen = config.growthStage();
+		for (Plant plant : plants)
+		{
+			plant.wanted = chosen.forPlant(n -> ThreadLocalRandom.current().nextInt(n));
+		}
+		for (Waiting tree : waiting)
+		{
+			tree.stage = chosen.forPlant(n -> ThreadLocalRandom.current().nextInt(n));
+		}
+		applyStages();
+	}
+
+	/** Each plant waiting on a new stage takes it once its model is in; the rest try again next frame. */
+	private void applyStages()
+	{
+		restaging = false;
+		for (Plant plant : plants)
+		{
+			if (plant.wanted == null)
+			{
+				continue;
+			}
+			Model model = model(plant.wanted.getModel());
+			if (model == null)
+			{
+				restaging = true;
+				continue;
+			}
+			plant.object.setModel(model);
+			plant.stage = plant.wanted;
+			plant.wanted = null;
 		}
 	}
 
@@ -239,6 +319,10 @@ public class FarmGuild
 	@Subscribe
 	public void onClientTick(ClientTick event)
 	{
+		if (restaging)
+		{
+			applyStages();
+		}
 		// A model the cache didn't have yet (a player who has never grown hemp) arrives within a few ticks.
 		if (!waiting.isEmpty())
 		{
@@ -392,6 +476,7 @@ public class FarmGuild
 		}
 		plants.clear();
 		waiting.clear();
+		restaging = false;
 	}
 
 	/** Reloads the scene when it holds the guild, the only place a reload changes anything. */
