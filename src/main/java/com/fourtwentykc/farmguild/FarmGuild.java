@@ -237,11 +237,12 @@ public class FarmGuild
 		{
 			return;
 		}
-		// Each plant grows once that minute; one whose next stage's model the client is still fetching tries the next tick.
+		// Each plant grows once that minute; one whose next stage's model the client is still fetching tries the next tick,
+		// and one still waiting on a new growth stage grows from that stage once it lands (Sol 10/26).
 		LocalDate today = LocalDate.now(clock);
 		for (Plant plant : plants)
 		{
-			if (today.equals(plant.grew))
+			if (today.equals(plant.grew) || plant.wanted != null)
 			{
 				continue;
 			}

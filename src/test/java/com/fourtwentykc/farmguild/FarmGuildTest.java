@@ -185,6 +185,31 @@ public class FarmGuildTest
 	}
 
 	@Test
+	public void aPlantWaitingOnANewStageGrowsFromItAtFourTwenty()
+	{
+		when(config.growthStage()).thenReturn(HempStage.STAGE_1);
+		RuneLiteObject plant = mock(RuneLiteObject.class);
+		when(client.createRuneLiteObject()).thenReturn(plant);
+		spawn(34486, IN_GUILD);
+		// Stage 3's model is still on its way when the setting changes, just before 4:20.
+		Model stage3 = mock(Model.class);
+		Model stage4 = mock(Model.class);
+		when(client.loadModel(HempStage.STAGE_3.getModel())).thenReturn(null, stage3);
+		when(client.loadModel(HempStage.STAGE_4.getModel())).thenReturn(stage4);
+		when(config.growthStage()).thenReturn(HempStage.STAGE_3);
+		guild.onConfigChanged(changed("growthStage"));
+		guild.clock = Clock.fixed(LocalDateTime.of(2026, 11, 4, 16, 20, 5).atZone(ZoneId.systemDefault()).toInstant(),
+			ZoneId.systemDefault());
+
+		guild.onGameTick(new GameTick());
+		verify(plant, never()).setModel(stage4);
+		guild.onClientTick(new ClientTick());
+		verify(plant).setModel(stage3);
+		guild.onGameTick(new GameTick());
+		verify(plant).setModel(stage4);
+	}
+
+	@Test
 	public void aProfileSwitchReloadsTheGuild()
 	{
 		guild.onProfileChanged(new ProfileChanged());
