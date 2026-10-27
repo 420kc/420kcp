@@ -197,13 +197,25 @@ public interface FourTwentyKcConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "seedStash",
+		name = "Seed Stash",
+		description = "The guild's seed vault is the Seed Stash, in its right-click options and over its window",
+		section = farmGuildSection,
+		position = 5
+	)
+	default boolean seedStash()
+	{
+		return true;
+	}
+
 	// World 420 alone needs 1,500 total level; 421 and 422 are open to every members account (Dylan, 10/23).
 	@ConfigItem(
 		keyName = "only420Worlds",
 		name = "Only show on w420-422",
 		description = "The Farm Guild shows on worlds 420, 421 and 422 alone; other worlds keep the game's own guild",
 		section = farmGuildSection,
-		position = 5
+		position = 6
 	)
 	default boolean only420Worlds()
 	{

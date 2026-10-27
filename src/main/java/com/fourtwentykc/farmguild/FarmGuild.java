@@ -45,7 +45,7 @@ public class FarmGuild
 	// The settings that change which plants stand, so the scene reloads for them alone.
 	private static final Set<String> PLANT_KEYS = Set.of("hempPlants", "moreHemp", "growthStage", "only420Worlds");
 	// The settings that change her text and the vault's, so the game's text comes back for them alone.
-	private static final Set<String> TEXT_KEYS = Set.of("maryJane", "only420Worlds");
+	private static final Set<String> TEXT_KEYS = Set.of("maryJane", "seedStash", "only420Worlds");
 
 	@Inject
 	private Client client;
@@ -228,7 +228,8 @@ public class FarmGuild
 		}
 		MenuEntry entry = event.getMenuEntry();
 		String target = entry.getTarget();
-		String renamed = SeedStash.rename(maryJane() ? MaryJane.rename(target) : target);
+		String hers = maryJane() ? MaryJane.rename(target) : target;
+		String renamed = seedStash() ? SeedStash.rename(hers) : hers;
 		if (renamed != null && !renamed.equals(target))
 		{
 			entry.setTarget(renamed);
@@ -246,7 +247,7 @@ public class FarmGuild
 			waiting.removeIf(w -> !missing.contains(w.stage.getModel()) && (grow(w.tree, w.stage)
 				|| !missing.add(w.stage.getModel())));
 		}
-		if (onThisWorld())
+		if (seedStash())
 		{
 			// The vault's window title is a child its frame script draws.
 			renameTree(client.getWidget(InterfaceID.SeedVault.FRAME), 2);
@@ -298,6 +299,11 @@ public class FarmGuild
 	private boolean maryJane()
 	{
 		return config.maryJane() && onThisWorld();
+	}
+
+	private boolean seedStash()
+	{
+		return config.seedStash() && onThisWorld();
 	}
 
 	/** The Seed Stash's name in a widget and its children, this many levels down. */
