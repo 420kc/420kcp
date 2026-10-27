@@ -30,5 +30,7 @@ worlds 420 to 422.
 
 ![Contract Mary Jane](docs/mary-jane.png)
 
+![Open Seed stash](docs/seed-stash.png)
+
 Every feature has its own switch in plugin settings, and all of them start on. Only you see the Farm Guild; turning it
 off brings the game's own guild back.
