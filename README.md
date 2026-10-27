@@ -23,7 +23,7 @@ worlds 420 to 422.
 - More hemp: the guild's plain crates grow hemp too; the crates you can search stay crates
 - Growth stage: every plant its own stage each time the guild loads (Random), or any one of the five stages
 - Grow at 4:20: at 4:20 pm your time, every plant grows a stage
-- Guildmaster Jane is Mary Jane, in her right-click options, over her dialogue and in her own lines
+- Guildmaster Jane is Mary Jane, in her right-click options, over her dialogue and in many of her lines
 - The seed vault is the Seed Stash
 - Shows on worlds 420 to 422 only, unless you turn that off: 420 needs 1,500 total level, and 421 and 422 are open to
   every members account
@@ -33,4 +33,4 @@ worlds 420 to 422.
 ![Open Seed stash](docs/seed-stash.png)
 
 Every feature has its own switch in plugin settings, and all of them start on. Only you see the Farm Guild; turning it
-off brings the game's own guild back.
+off brings the game's own guild back. The hemp is scenery: it can't be clicked or examined.
