@@ -25,12 +25,11 @@ worlds 420 to 422.
 - Grow at 4:20: at 4:20 pm your time, every plant grows a stage
 - Guildmaster Jane is Mary Jane, in her right-click options, over her dialogue and in many of her lines
 - The seed vault is the Seed Stash
-- Shows on worlds 420 to 422 only, unless you turn that off: 420 needs 1,500 total level, and 421 and 422 are open to
-  every members account
+- Defaults to showing on w420-422 only but can be enabled for all worlds. w420 requires at least 1500 total level.
 
 ![Contract Mary Jane](docs/mary-jane.png)
 
 ![Open Seed stash](docs/seed-stash.png)
 
-Every feature has its own switch in plugin settings, and all of them start on. Only you see the Farm Guild; turning it
-off brings the game's own guild back. The hemp is scenery: it can't be clicked or examined.
+Every feature has its own switch in plugin settings, and all of them start on. The hemp is scenery: it can't be clicked
+or examined.
